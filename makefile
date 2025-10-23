@@ -1,4 +1,4 @@
-.PHONY: setup install-uv sync-deps install-spacy-model update-spacy-model check-uv check-search-engine run-dev run-prod run-web-agent-site run-web-agent-text setup-data-small setup-data-all setup-human-trajs download-spacy-model-lg setup-search-engine clean
+.PHONY: setup install-uv sync-deps install-spacy-model update-spacy-model check-uv check-search-engine run-dev run-prod run-web-agent-site run-web-agent-text setup-data-small setup-data-all setup-human-trajs download-spacy-model-lg setup-search-engine test clean
 
 setup: install-uv sync-deps install-spacy-model
 	@echo "✓ Complete setup finished!"
@@ -97,6 +97,11 @@ setup-search-engine: check-uv
 	@cd search_engine && mkdir -p indexes
 	@cd search_engine && ./run_indexing.sh
 	@echo "✓ Search engine setup complete!"
+
+test: check-uv
+	@echo "Running tests with pytest..."
+	@uv run pytest tests/ -v
+	@echo "✓ Tests completed!"
 
 clean:
 	@echo "Cleaning up temporary files..."

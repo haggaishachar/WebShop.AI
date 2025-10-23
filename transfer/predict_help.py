@@ -83,7 +83,7 @@ def parse_item_page_ebay(asin, verbose=True):
     # Price: Get price string, extract decimal numbers from string
     try:
         price_str = soup.find('div', {'class': 'mainPrice'}).text
-        prices = re.findall('\d*\.?\d+', price_str)
+        prices = re.findall(r'\d*\.?\d+', price_str)
         product_dict["Price"] = prices[0]
     except:
         product_dict["Price"] = "N/A"
@@ -106,10 +106,10 @@ def parse_item_page_ebay(asin, verbose=True):
     # Options
     options, options_to_images = {}, {} # TODO: options_to_images possible?
     try:
-        option_blocks = soup.findAll('select', {'class': 'msku-sel'})
+        option_blocks = soup.find_all('select', {'class': 'msku-sel'})
         for block in option_blocks:
             name = block["name"].strip().strip(":")
-            option_tags = block.findAll("option")
+            option_tags = block.find_all("option")
             opt_list = []
             for option_tag in option_tags:
                 if "select" not in option_tag.text.lower():
@@ -154,7 +154,7 @@ def parse_results_ws(query, page_num=None, verbose=True):
         print(f"Search Results URL: {url}")
     webpage = requests.get(url, headers={'User-Agent': HEADER_, 'Accept-Language': 'en-US, en;q=0.5'})
     soup = BeautifulSoup(webpage.content, 'html.parser')
-    products = soup.findAll('div', {'class': 'list-group-item'})
+    products = soup.find_all('div', {'class': 'list-group-item'})
 
     results = []
     for product in products:
@@ -203,7 +203,7 @@ def parse_item_page_ws(asin, query, page_num, options, verbose=True):
     # Title, Price, Rating, and MainImage
     product_dict["Title"] = soup.find('h2').text
     
-    h4_headers = soup.findAll("h4")
+    h4_headers = soup.find_all("h4")
     for header in h4_headers:
         text = header.text
         if "Price" in text:
@@ -215,11 +215,11 @@ def parse_item_page_ws(asin, query, page_num, options, verbose=True):
 
     # Options
     options, options_to_image = {}, {}
-    option_blocks = soup.findAll("div", {'class': 'radio-toolbar'})
+    option_blocks = soup.find_all("div", {'class': 'radio-toolbar'})
     for block in option_blocks:
         name = block.find("input")["name"]
-        labels = block.findAll("label")
-        inputs = block.findAll("input")
+        labels = block.find_all("label")
+        inputs = block.find_all("input")
         opt_list = []
         for label, input in zip(labels, inputs):
             opt = label.text
@@ -252,7 +252,7 @@ def parse_item_page_ws(asin, query, page_num, options, verbose=True):
         print(f"Item Features URL: {url}")
     webpage = requests.get(url, headers={'User-Agent': HEADER_, 'Accept-Language': 'en-US, en;q=0.5'})
     soup = BeautifulSoup(webpage.content, 'html.parser')
-    bullets = soup.find(name="ul").findAll(name="li")
+    bullets = soup.find(name="ul").find_all(name="li")
     product_dict["BulletPoints"] = '\n'.join([b.text.strip() for b in bullets])
 
     return product_dict
@@ -267,7 +267,7 @@ def parse_results_amz(query, page_num=None, verbose=True):
         print(f"Search Results URL: {url}")
     webpage = requests.get(url, headers={'User-Agent': HEADER_, 'Accept-Language': 'en-US, en;q=0.5'})
     soup = BeautifulSoup(webpage.content, 'html.parser')
-    products = soup.findAll('div', {'data-component-type': 's-search-result'})
+    products = soup.find_all('div', {'data-component-type': 's-search-result'})
     if products is None:
         temp = open(DEBUG_HTML, "w")
         temp.write(str(soup))
@@ -346,7 +346,7 @@ def parse_item_page_amz(asin, verbose=True):
     try:
         desc_body = soup.find(name="div", attrs={"id": "productDescription_feature_div"})
         desc_div = desc_body.find(name="div", attrs={"id": "productDescription"})
-        desc_ps = desc_div.findAll(name="p")
+        desc_ps = desc_div.find_all(name="p")
         desc = " ".join([p.text for p in desc_ps])
     except AttributeError:
         desc = "N/A"
@@ -366,12 +366,12 @@ def parse_item_page_amz(asin, verbose=True):
         option_body = soup.find(name='div', attrs={"id": "softlinesTwister_feature_div"})
         if option_body is None:
             option_body = soup.find(name='div', attrs={"id": "twister_feature_div"})
-        option_blocks = option_body.findAll(name='ul')
+        option_blocks = option_body.find_all(name='ul')
         for block in option_blocks:
             name = json.loads(block["data-a-button-group"])["name"]
             # Options
             opt_list = []
-            for li in block.findAll("li"):
+            for li in block.find_all("li"):
                 img = li.find(name="img")
                 if img is not None:
                     opt = img["alt"].strip()

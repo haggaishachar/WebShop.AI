@@ -5,12 +5,15 @@ description = "WebShop AI application"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "accelerate>=1.2.0",
     "beautifulsoup4>=4.14.2",
     "cleantext>=1.1.4",
+    "datasets>=3.0.0",
     "flask>=3.0.3",
     "gdown>=5.0.0",
     "gradio>=4.0.0",
     "gymnasium>=1.0.0",
+    "huggingface-hub>=0.24.0",
     "litellm>=1.0.0",
     "lxml>=6.0.2",
     "numpy>=1.24.0",
@@ -27,6 +30,8 @@ dependencies = [
     "thefuzz>=0.22.1",
     "torch>=2.5.1",
     "tqdm>=4.66.0",
+    "transformers>=4.40.0",
+    "wandb>=0.19.0",
 ]
 
 [project.optional-dependencies]
@@ -63,6 +68,12 @@ target-version = "py312"
 line-length = 88
 select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "COM", "C4", "DTZ", "T10", "DJ", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TID", "TCH", "INT", "ARG", "PTH", "TD", "FIX", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF", "FURB", "LOG", "RUF"]
 ignore = ["S101", "PLR0913", "PLR0912", "PLR0915"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning:spacy.*:",
+    "ignore::DeprecationWarning:weasel.*:",
+]
 
 [tool.mypy]
 python_version = "3.12"

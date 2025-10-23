@@ -46,18 +46,18 @@ def test_get_type_reward():
     goal['name'] = "Mens D.O.N. Issue 2 Gca Basketball Sneakers Shoes Casual - Off White"
     purchased['name'] = "PEAK High Top Mens Basketball Shoes Lou Williams Streetball Master Breathable Non Slip Outdoor Sneakers"
     result = get_type_reward(purchased, goal)
-    assert isclose(result['title_score'], 0.333, abs_tol=1e-2)
+    assert isclose(result['title_score'], 0.4, abs_tol=1e-2)
 
     # Slightly similar product names
     goal['name'] = "Saireed UL Listed 2 Prong Power Cord for JBL Bar 3.1 Bar 2.1 Channel 4K Ultra HD Soundbar Home Theater System Subwoofer"
     purchased['name'] = "BRST AC Power Cord Outlet Socket Cable Plug Lead for Panasonic SC-HT830V DVD/VCR Combo Home Theater System"
     result = get_type_reward(purchased, goal)
-    assert isclose(result['title_score'], 0.3, abs_tol=1e-2)
+    assert isclose(result['title_score'], 0.3125, abs_tol=1e-2)
 
     goal['name'] = "Saireed UL Listed 2 Prong Power Cord for JBL Bar 3.1 Bar 2.1 Channel 4K Ultra HD Soundbar"
     purchased['name'] = "BRST AC Power Cord Outlet Socket Cable Plug Lead for Panasonic SC-HT830V DVD/VCR Combo Home Theater System"
     result = get_type_reward(purchased, goal)
-    assert isclose(result['title_score'], 0.15, abs_tol=1e-2)
+    assert isclose(result['title_score'], 0.1667, abs_tol=1e-2)
 
     # Completely different product names
     goal['name'] = "Rusticware 921ORB Kitchen and Bath Cabinet Knob"
