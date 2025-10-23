@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 import json
 import random
 import string
@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from bs4.element import Comment
 from collections import defaultdict
 from flask import Flask
+from gymnasium import spaces
 from web_agent_site.engine.engine import (
     load_products,
     init_search_engine,
@@ -56,6 +57,17 @@ class WebAgentTextEnv(gym.Env):
         super(WebAgentTextEnv, self).__init__()
         self.observation_mode = observation_mode
         self.kwargs = kwargs
+        
+        # Define action and observation spaces for gymnasium compatibility
+        # Use printable ASCII characters as charset to handle HTML/text with special chars
+        # string.printable includes all digits, letters, punctuation, and whitespace
+        printable_charset = string.printable
+        
+        # Action space is text-based (search queries or click commands)
+        self.action_space = spaces.Text(max_length=1000, charset=printable_charset)
+        # Observation space is also text-based (HTML or text observations)
+        # Use a large max_length to accommodate HTML pages which can be quite large
+        self.observation_space = spaces.Text(max_length=1000000, charset=printable_charset)
 
         self.file_path = file_path
 
@@ -85,15 +97,22 @@ class WebAgentTextEnv(gym.Env):
 
     def step(self, action):
         """
-        Takes an action, updates WebShop environment, and returns (observation, reward, done, info)
+        Takes an action, updates WebShop environment, and returns (observation, reward, terminated, truncated, info)
 
         Arguments:
         action (`str`): An action should be of the following structure:
           - search[keywords]
           - click[value]
         If action not valid, perform nothing.
+        
+        Returns:
+            observation: Current state
+            reward: Reward for the action
+            terminated: Whether the episode ended naturally
+            truncated: Whether the episode was truncated (not used here, always False)
+            info: Additional information dictionary
         """
-        info = None
+        info = {}
         self.get_available_actions()
 
         # Determine action type (click, search) and argument
@@ -122,7 +141,8 @@ class WebAgentTextEnv(gym.Env):
                 text_list.append(self.prev_obs[-i])
         state = ' [SEP] '.join(text_list[::-1])
         self.prev_obs.append(ob)
-        return state, status['reward'], status['done'], info
+        # Return gymnasium format: obs, reward, terminated, truncated, info
+        return state, status['reward'], status['done'], False, info
 
     def get_available_actions(self):
         """Returns list of available actions at the current step"""
@@ -237,8 +257,25 @@ class WebAgentTextEnv(gym.Env):
                 observation += processed_t + '\n'
             return observation
     
-    def reset(self, session=None, instruction_text=None):
-        """Create a new session and reset environment variables"""
+    def reset(self, seed=None, options=None, session=None, instruction_text=None):
+        """Create a new session and reset environment variables
+        
+        Args:
+            seed: Random seed (for gymnasium compatibility)
+            options: Additional options (for gymnasium compatibility)
+            session: Session ID
+            instruction_text: Custom instruction text
+        """
+        # Handle gymnasium's seed parameter
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+        
+        # Handle options dictionary (may contain session, instruction_text)
+        if options is not None:
+            session = options.get('session', session)
+            instruction_text = options.get('instruction_text', instruction_text)
+        
         session_int = None
         if session is not None:
             self.session = str(session)
@@ -257,7 +294,8 @@ class WebAgentTextEnv(gym.Env):
         obs = self.observation
         self.prev_obs = [obs]
         self.prev_actions = []
-        return obs, None
+        # Return observation and info dict (gymnasium format)
+        return obs, {}
 
     def render(self, mode='human'):
         pass

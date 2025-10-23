@@ -1,4 +1,5 @@
-import gym
+import gymnasium as gym
+import numpy as np
 import random
 import requests
 import string
@@ -6,11 +7,12 @@ import time
 
 from bs4 import BeautifulSoup
 from bs4.element import Comment
-from gym import spaces
+from gymnasium import spaces
 from os.path import join, dirname, abspath
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import ElementNotInteractableException
 from web_agent_site.engine.engine import parse_action, END_BUTTON
@@ -35,7 +37,15 @@ class WebAgentSiteEnv(gym.Env):
         self.kwargs = kwargs
 
         # Create a browser driver to simulate the WebShop site
-        service = Service(join(dirname(abspath(__file__)), 'chromedriver'))
+        # Try local chromedriver first, fallback to system chromedriver
+        local_chromedriver = join(dirname(abspath(__file__)), 'chromedriver')
+        import os
+        if os.path.exists(local_chromedriver):
+            service = Service(local_chromedriver)
+        else:
+            # Use system chromedriver (must be in PATH)
+            service = Service()
+        
         options = Options()
         if 'render' not in kwargs or not kwargs['render']:
             options.add_argument("--headless")  # don't show browser
@@ -49,23 +59,30 @@ class WebAgentSiteEnv(gym.Env):
 
     def step(self, action):
         """
-        Takes an action, updates WebShop environment, and returns (observation, reward, done, info)
+        Takes an action, updates WebShop environment, and returns (observation, reward, terminated, truncated, info)
 
         Arguments:
         action (`str`): An action should be of the following structure:
           - search[keywords]
           - click[value]
         If action not valid, perform nothing.
+        
+        Returns:
+            observation: Current state
+            reward: Reward for the action
+            terminated: Whether the episode ended naturally
+            truncated: Whether the episode was truncated (not used here, always False)
+            info: Additional information dictionary
         """
         reward = 0.0
         done = False
-        info = None
+        info = {}
 
         # Map action to executed command on the WebShop environment via the broswer driver
         action_name, action_arg = parse_action(action)
         if action_name == 'search':
             try:
-                search_bar = self.browser.find_element_by_id('search_input')
+                search_bar = self.browser.find_element(By.ID, 'search_input')
             except Exception:
                 pass
             else:
@@ -88,22 +105,23 @@ class WebAgentSiteEnv(gym.Env):
 
         if 'pause' in self.kwargs:
             time.sleep(self.kwargs['pause'])
-        return self.observation, reward, done, info
+        # Return gymnasium format: obs, reward, terminated, truncated, info
+        return self.observation, reward, done, False, info
     
     def get_available_actions(self):
         """Returns list of available actions at the current step"""
         # Determine if a search bar is available
         try:
-            search_bar = self.browser.find_element_by_id('search_input')
+            search_bar = self.browser.find_element(By.ID, 'search_input')
         except Exception:
             has_search_bar = False
         else:
             has_search_bar = True
 
         # Collect buttons, links, and options as clickables
-        buttons = self.browser.find_elements_by_class_name('btn')
-        product_links = self.browser.find_elements_by_class_name('product-link')
-        buying_options = self.browser.find_elements_by_css_selector("input[type='radio']")
+        buttons = self.browser.find_elements(By.CLASS_NAME, 'btn')
+        product_links = self.browser.find_elements(By.CLASS_NAME, 'product-link')
+        buying_options = self.browser.find_elements(By.CSS_SELECTOR, "input[type='radio']")
 
         self.text_to_clickable = {
             f'{b.text}': b
@@ -181,14 +199,29 @@ class WebAgentSiteEnv(gym.Env):
     @property
     def action_space(self):
         # Recommended to use `get_available_actions` instead
-        return NotImplementedError
+        # Return a text space for gymnasium compatibility
+        # Use printable ASCII characters as charset to handle HTML/text with special chars
+        return spaces.Text(max_length=1000, charset=string.printable)
 
     @property
     def observation_space(self):
-        return NotImplementedError
+        # Return a text space for gymnasium compatibility
+        # Use a large max_length to accommodate HTML pages which can be quite large
+        # Use printable ASCII characters as charset to handle HTML/text with special chars
+        return spaces.Text(max_length=1000000, charset=string.printable)
 
-    def reset(self):
-        """Create a new session and reset environment variables"""
+    def reset(self, seed=None, options=None):
+        """Create a new session and reset environment variables
+        
+        Args:
+            seed: Random seed (for gymnasium compatibility)
+            options: Additional options (for gymnasium compatibility)
+        """
+        # Handle gymnasium's seed parameter
+        if seed is not None:
+            random.seed(seed)
+            np.random.seed(seed)
+        
         if self.assigned_session is not None:
             self.session = self.assigned_session
         else:
@@ -198,7 +231,8 @@ class WebAgentSiteEnv(gym.Env):
 
         self.instruction_text = self.get_instruction_text()
 
-        return self.observation, None
+        # Return observation and info dict (gymnasium format)
+        return self.observation, {}
 
     def render(self, mode='human'):
         # TODO: Render observation in terminal or WebShop website
