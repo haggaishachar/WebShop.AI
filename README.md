@@ -29,6 +29,7 @@ This repository contains code for reproducing results. If you find this work use
 ```
 ## 📖 Table of Contents <!-- omit in toc -->
 * [👋 Overview](#-overview)
+* [✨ Recent Enhancements](#-recent-enhancements)
 * [🚀 Setup](#-setup)
 * [🛠️ Usage](#-usage)
 * [💫 Contributions](#-contributions)
@@ -37,6 +38,16 @@ This repository contains code for reproducing results. If you find this work use
 WebShop is a simulated e-commerce website environment with 1.18 million real-world products and 12,087 crowd-sourced text instructions. In this environment, an agent needs to navigate multiple types of webpages and issue diverse actions to find, customize, and purchase a product given an instruction. WebShop provides several challenges including understanding compositional instructions, query (re-)formulation, dealing with noisy text in webpages, and performing strategic exploration.
 
 **Hugging Face Demo**: Devise your own natural language query for a product and ask for an agent trained with WebShop to find it on Amazon or eBay, deployed as a 🤗 Hugging Face space [here](https://huggingface.co/spaces/webshop/amazon_shop)!
+
+## ✨ Recent Enhancements
+
+This repository includes several enhancements for easier experimentation:
+
+- **🤖 Multiple Policy Implementations**: Ready-to-use policies including Random, Human (interactive), Simple Rule (paper baseline), and enhanced Paper Rule policies
+- **🔧 Unified Runner Script**: Flexible `run_web_agent_env.py` with configurable CLI arguments for observation mode, policies, and episode counts
+- **📊 Rich Output**: Beautiful formatted output with episode statistics, reward breakdowns, and multi-episode aggregate metrics
+- **⚡ Batch Evaluation**: Run multiple episodes with single commands and get comprehensive performance summaries
+- **🎯 Makefile Shortcuts**: Quick commands like `make run-web-agent-paper-rule NUM_EPISODES=100` for easy experimentation
 
 ## 🚀 Setup
 This project uses modern Python tooling with [uv](https://github.com/astral-sh/uv) for fast, reliable dependency management.
@@ -93,8 +104,12 @@ The project uses a `Makefile` for common tasks:
 **Run Commands:**
 - `make run-dev` - Start Flask webapp in development mode
 - `make run-prod` - Start Flask webapp in production mode
+- `make run-web-agent-text` - Run web agent text environment with random policy
 - `make run-web-agent-site` - Run web agent with browser (requires ChromeDriver)
-- `make run-web-agent-text` - Run web agent text environment
+- `make run-web-agent-human` - Run web agent with interactive human policy
+- `make run-web-agent-paper-rule` - Run web agent with paper's rule-based policy
+- `make run-web-agent-simple-rule` - Run web agent with simple rule-based policy
+- `make run-web-agent-custom ARGS='...'` - Run with custom parameters
 
 **Utility Commands:**
 - `make clean` - Clean up temporary files
@@ -172,37 +187,114 @@ Now, you can write your own agent that interacts with the environment via the st
 **Note**: This project uses [Gymnasium](https://gymnasium.farama.org/) (the maintained fork of OpenAI Gym). The API follows the Gymnasium v1.0+ standard with 5-value returns from `step()`: `(observation, reward, terminated, truncated, info)`.
 
 ### Running Example Agents
-Examples of a `RandomPolicy` agent interacting with the WebShop environment in both `html` and `simple` modes can be found in the `run_envs` folder. To run these examples locally:
+The `run_envs` folder contains a flexible runner script that supports multiple policies and configurations. The environment can run with different policies:
 
-**Text Environment:**
+**Available Policies:**
+- **Random Policy** - Takes random actions (baseline)
+- **Human Policy** - Interactive mode where you provide actions
+- **Simple Rule Policy** - Basic heuristic: search instruction → click first result → buy (9.6% success rate baseline from paper)
+- **Paper Rule Policy** - Enhanced heuristic with option selection and attribute matching
+
+**Quick Start - Run with Different Policies:**
+
 ```sh
+# Run with random policy (default, 100 episodes)
 make run-web-agent-text
-# or
-uv run python run_envs/run_web_agent_text_env.py
+
+# Run with simple rule-based policy from paper
+make run-web-agent-simple-rule
+
+# Run with enhanced paper rule-based policy
+make run-web-agent-paper-rule
+
+# Run with interactive human policy
+make run-web-agent-human
+
+# Customize number of episodes (default is 100)
+make run-web-agent-text NUM_EPISODES=10
 ```
 
-**Site Environment (with browser):**
+**Advanced Usage:**
+
 ```sh
+# Run with custom parameters
+make run-web-agent-custom ARGS='--observation-mode text --num-products 100 --policy random --num-episodes 5'
+
+# Run with site environment (requires ChromeDriver and Flask server)
 make run-web-agent-site
-# or
-uv run python run_envs/run_web_agent_site_env.py
+
+# Direct Python usage with all options
+uv run python run_envs/run_web_agent_env.py \
+  --observation-mode text \
+  --num-products 1000 \
+  --policy paper_rule \
+  --num-episodes 10 \
+  --max-steps 100
 ```
 
-Output example:
+**Command Line Options:**
+- `--observation-mode` - Choose `text`, `html`, or `text_rich` (default: `text`)
+- `--num-products` - Number of products to load (default: all available)
+- `--policy` - Choose `random`, `human`, `simple_rule`, or `paper_rule` (default: `random`)
+- `--num-episodes` - Number of episodes to run (default: `1`)
+- `--max-steps` - Maximum steps per episode (default: `100`)
+- `--use-site-env` - Use browser-based environment instead of text (requires ChromeDriver)
+
+**Output Example:**
 ```
+🚀 Starting WebShop environment
+   Observation mode: text
+   Number of products: 1000
+   Policy: paper_rule
+   Number of episodes: 100
+
 Products loaded.
 Keys Cleaned.
 Attributes Loaded.
-100%|██████████████████| 1000/1000
 Loaded 6910 goals.
-Amazon Shopping Game [SEP] Instruction: [SEP] Find me slim f...
-Available actions: {'has_search_bar': True, 'clickables': ['search']}
-Taking action "search[shoes]" -> Reward = 0.0
+
+┌─ 🔍 Observation ────────────────────────────┐
+│ Amazon Shopping Game                        │
+│ Instruction: Find me a red leather wallet   │
+└─────────────────────────────────────────────┘
+
+┌─ ⚡ Available Actions ──────────────────────┐
+│ ✓ Search bar available                      │
+└─────────────────────────────────────────────┘
+
+➤ Action: search[red leather wallet]
+➤ Reward: 0.0
 ...
 ```
 
+**Programmatic API Usage:**
+
+You can also use the runner programmatically in your own scripts:
+
+```python
+from run_envs.run_web_agent_env import create_env, run_episode
+from web_agent_site.models import RandomPolicy, PaperRulePolicy
+
+# Create environment
+env = create_env(
+    observation_mode='text',
+    num_products=100,
+    use_site_env=False
+)
+
+# Create policy
+policy = PaperRulePolicy()
+
+# Run episodes
+for i in range(10):
+    stats = run_episode(env, policy, episode_num=i+1)
+    print(f"Episode {i+1}: Reward={stats['total_reward']:.4f}, Steps={stats['steps']}")
+
+env.close()
+```
+
 **ChromeDriver Setup:**
-The site environment requires ChromeDriver. See `web_agent_site/envs/README.md` for installation instructions:
+The site environment requires ChromeDriver. See `run_envs/README.md` for full details:
 - **Recommended**: Install system-wide (`sudo apt-get install chromium-chromedriver` on Ubuntu/Debian)
 - **Alternative**: Download from [ChromeDriver](https://chromedriver.chromium.org/downloads) and place in `web_agent_site/envs/chromedriver`
 
