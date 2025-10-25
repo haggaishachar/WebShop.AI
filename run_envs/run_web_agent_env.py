@@ -35,7 +35,16 @@ from rich.syntax import Syntax
 import json
 
 from web_agent_site.envs import WebAgentTextEnv, WebAgentSiteEnv
-from web_agent_site.models import RandomPolicy, HumanPolicy, PaperRulePolicy, SimpleRulePolicy
+from web_agent_site.models import (
+    RandomPolicy,
+    HumanPolicy,
+    PaperRulePolicy,
+    SimpleRulePolicy,
+    ILPolicy,
+    RLPolicy,
+    create_il_policy,
+    create_rl_policy,
+)
 from web_agent_site.utils import DEBUG_PROD_SIZE
 
 
@@ -259,8 +268,62 @@ def main():
         '--policy',
         type=str,
         default='random',
-        choices=['random', 'human', 'paper_rule', 'simple_rule'],
+        choices=['random', 'human', 'paper_rule', 'simple_rule', 'il', 'rl'],
         help='Policy to use (default: random)'
+    )
+    parser.add_argument(
+        '--il-use-search-model',
+        action='store_true',
+        default=True,
+        help='IL: Use BART search model (default: True)'
+    )
+    parser.add_argument(
+        '--il-no-search-model',
+        dest='il_use_search_model',
+        action='store_false',
+        help='IL: Disable BART search model'
+    )
+    parser.add_argument(
+        '--il-use-images',
+        action='store_true',
+        help='IL: Use image features (default: False)'
+    )
+    parser.add_argument(
+        '--il-memory',
+        action='store_true',
+        help='IL: Enable memory (previous obs/actions) (default: False)'
+    )
+    parser.add_argument(
+        '--il-sampling',
+        type=str,
+        default='greedy',
+        choices=['greedy', 'softmax'],
+        help='IL: Action sampling method (default: greedy)'
+    )
+    parser.add_argument(
+        '--rl-model-path',
+        type=str,
+        default=None,
+        help='RL: Path to RL model checkpoint (optional)'
+    )
+    parser.add_argument(
+        '--rl-network',
+        type=str,
+        default='bert',
+        choices=['bert', 'rnn'],
+        help='RL: Network architecture (default: bert)'
+    )
+    parser.add_argument(
+        '--rl-action-method',
+        type=str,
+        default='greedy',
+        choices=['greedy', 'softmax', 'eps'],
+        help='RL: Action selection method (default: greedy)'
+    )
+    parser.add_argument(
+        '--rl-use-images',
+        action='store_true',
+        help='RL: Use image features (default: False)'
     )
     parser.add_argument(
         '--use-site-env',
@@ -300,6 +363,42 @@ def main():
         policy = PaperRulePolicy()
     elif args.policy == 'simple_rule':
         policy = SimpleRulePolicy()
+    elif args.policy == 'il':
+        if ILPolicy is None or create_il_policy is None:
+            print("\n❌ IL Policy not available!")
+            print("Make sure baseline models dependencies are installed:")
+            print("  uv pip install -e .[baseline]")
+            print("\nAnd download the models:")
+            print("  make download-baseline-models")
+            exit(1)
+        try:
+            policy = create_il_policy(
+                use_search_model=args.il_use_search_model,
+                use_images=args.il_use_images,
+                memory=args.il_memory,
+                sampling_method=args.il_sampling,
+            )
+        except Exception as e:
+            print(f"\n❌ Failed to create IL policy: {e}")
+            exit(1)
+    elif args.policy == 'rl':
+        if RLPolicy is None or create_rl_policy is None:
+            print("\n❌ RL Policy not available!")
+            print("Make sure baseline models dependencies are installed:")
+            print("  uv pip install -e .[baseline]")
+            print("\nAnd download the models:")
+            print("  make download-baseline-models")
+            exit(1)
+        try:
+            policy = create_rl_policy(
+                model_path=args.rl_model_path,
+                network=args.rl_network,
+                action_method=args.rl_action_method,
+                use_images=args.rl_use_images,
+            )
+        except Exception as e:
+            print(f"\n❌ Failed to create RL policy: {e}")
+            exit(1)
     else:
         raise ValueError(f'Unknown policy: {args.policy}')
     

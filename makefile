@@ -1,4 +1,4 @@
-.PHONY: setup install-uv sync-deps install-spacy-model update-spacy-model check-uv check-search-engine run-dev run-prod run-web-agent-site run-web-agent-text run-web-agent-human run-web-agent-paper-rule run-web-agent-simple-rule run-web-agent-custom setup-data-small setup-data-all setup-human-trajs download-spacy-model-lg setup-search-engine test clean
+.PHONY: setup install-uv sync-deps install-spacy-model update-spacy-model check-uv check-search-engine run-dev run-prod run-web-agent-site run-web-agent-text run-web-agent-human run-web-agent-paper-rule run-web-agent-simple-rule run-web-agent-il run-web-agent-rl run-web-agent-custom setup-data-small setup-data-all setup-human-trajs download-spacy-model-lg setup-search-engine download-baseline-models test clean
 
 # Default number of episodes for web agent runs
 NUM_EPISODES ?= 100
@@ -78,6 +78,16 @@ run-web-agent-simple-rule: check-search-engine
 	@echo "Starting web agent text environment with simple rule-based policy ($(NUM_EPISODES) episodes)..."
 	@uv run python run_envs/run_web_agent_env.py --observation-mode text --policy simple_rule --num-episodes $(NUM_EPISODES)
 
+run-web-agent-il: check-search-engine
+	@echo "Starting web agent text environment with IL policy ($(NUM_EPISODES) episodes)..."
+	@echo "Note: This requires baseline models. Run 'make download-baseline-models' if not done."
+	@uv run python run_envs/run_web_agent_env.py --observation-mode text --policy il --num-episodes $(NUM_EPISODES)
+
+run-web-agent-rl: check-search-engine
+	@echo "Starting web agent text environment with RL policy ($(NUM_EPISODES) episodes)..."
+	@echo "Note: This requires baseline models. Run 'make download-baseline-models' if not done."
+	@uv run python run_envs/run_web_agent_env.py --observation-mode text --policy rl --num-episodes $(NUM_EPISODES)
+
 run-web-agent-custom:
 	@echo "Starting web agent with custom parameters..."
 	@echo "Usage: make run-web-agent-custom ARGS='--observation-mode text --num-products 100 --policy random --num-episodes 3'"
@@ -110,6 +120,12 @@ download-spacy-model-lg: check-uv
 	@echo "Downloading spaCy large model (en_core_web_lg)..."
 	@uv run python -m spacy download en_core_web_lg
 	@echo "✓ spaCy large model installed successfully!"
+
+download-baseline-models: check-uv
+	@echo "Downloading baseline IL models..."
+	@echo "This will download pre-trained BERT and BART models (~2GB total)"
+	@uv run python baseline_models/download_models.py
+	@echo "✓ Baseline models downloaded successfully!"
 
 setup-search-engine: check-uv
 	@echo "Setting up search engine..."

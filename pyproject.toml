@@ -42,6 +42,9 @@ dev = [
     "mypy>=1.0.0",
     "requests-mock>=1.11.0",
 ]
+baseline = [
+    "faiss-cpu>=1.7.4",
+]
 
 [build-system]
 requires = ["hatchling"]
