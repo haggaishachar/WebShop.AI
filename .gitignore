@@ -14,5 +14,7 @@ search_engine/resources*
 transfer/flagged
 user_session_logs/
 
+# LiteLLM cache directory
+.cache/
 
 *_err_*.log
