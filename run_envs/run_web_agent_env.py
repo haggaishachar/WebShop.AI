@@ -35,7 +35,7 @@ from rich.syntax import Syntax
 import json
 
 from web_agent_site.envs import WebAgentTextEnv, WebAgentSiteEnv
-from web_agent_site.models import RandomPolicy, HumanPolicy, PaperRulePolicy, SimpleRulePolicy
+from web_agent_site.models import RandomPolicy, HumanPolicy, PaperRulePolicy, SimpleRulePolicy, LLMPolicy
 from web_agent_site.utils import DEBUG_PROD_SIZE
 
 
@@ -259,7 +259,7 @@ def main():
         '--policy',
         type=str,
         default='random',
-        choices=['random', 'human', 'paper_rule', 'simple_rule'],
+        choices=['random', 'human', 'paper_rule', 'simple_rule', 'llm'],
         help='Policy to use (default: random)'
     )
     parser.add_argument(
@@ -279,6 +279,12 @@ def main():
         default=100,
         help='Maximum steps per episode (default: 100)'
     )
+    parser.add_argument(
+        '--model',
+        type=str,
+        default='gpt-3.5-turbo',
+        help='LLM model to use for LLMPolicy (default: gpt-3.5-turbo)'
+    )
     
     args = parser.parse_args()
     
@@ -287,6 +293,8 @@ def main():
     print(f"   Observation mode: {args.observation_mode}")
     print(f"   Number of products: {args.num_products}")
     print(f"   Policy: {args.policy}")
+    if args.policy == 'llm':
+        print(f"   Model: {args.model}")
     print(f"   Environment: {'WebAgentSiteEnv' if args.use_site_env else 'WebAgentTextEnv'}")
     print(f"   Number of episodes: {args.num_episodes}")
     print(f"   Max steps per episode: {args.max_steps}\n")
@@ -300,6 +308,8 @@ def main():
         policy = PaperRulePolicy()
     elif args.policy == 'simple_rule':
         policy = SimpleRulePolicy()
+    elif args.policy == 'llm':
+        policy = LLMPolicy(model=args.model)
     else:
         raise ValueError(f'Unknown policy: {args.policy}')
     

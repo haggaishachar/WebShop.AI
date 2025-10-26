@@ -1,4 +1,4 @@
-.PHONY: setup install-uv sync-deps install-spacy-model update-spacy-model check-uv check-search-engine run-dev run-prod run-web-agent-site run-web-agent-text run-web-agent-human run-web-agent-paper-rule run-web-agent-simple-rule run-web-agent-custom setup-data-small setup-data-all setup-human-trajs download-spacy-model-lg setup-search-engine test clean
+.PHONY: setup install-uv sync-deps install-spacy-model update-spacy-model check-uv check-search-engine run-dev run-prod run-web-agent-site run-web-agent-text run-web-agent-human run-web-agent-paper-rule run-web-agent-simple-rule run-web-agent-llm run-web-agent-custom setup-data-small setup-data-all setup-human-trajs download-spacy-model-lg setup-search-engine test clean
 
 # Default number of episodes for web agent runs
 NUM_EPISODES ?= 100
@@ -52,37 +52,41 @@ update-spacy-model: check-uv
 
 run-dev: check-search-engine
 	@echo "Starting Flask app in development mode..."
-	@FLASK_ENV=development uv run python -m web_agent_site.app --log --attrs
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so FLASK_ENV=development uv run python -m web_agent_site.app --log --attrs
 
 run-prod: check-search-engine
 	@echo "Starting Flask app in production mode..."
-	@uv run python -m web_agent_site.app --log
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so uv run python -m web_agent_site.app --log
 
 run-web-agent-site: check-search-engine
 	@echo "Starting web agent site environment ($(NUM_EPISODES) episodes)..."
-	@uv run python run_envs/run_web_agent_env.py --use-site-env --observation-mode text --policy random --num-episodes $(NUM_EPISODES)
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so uv run python run_envs/run_web_agent_env.py --use-site-env --observation-mode text --policy random --num-episodes $(NUM_EPISODES)
 
 run-web-agent-text: check-search-engine
 	@echo "Starting web agent text environment ($(NUM_EPISODES) episodes)..."
-	@uv run python run_envs/run_web_agent_env.py --observation-mode text --policy random --num-episodes $(NUM_EPISODES)
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so uv run python run_envs/run_web_agent_env.py --observation-mode text --policy random --num-episodes $(NUM_EPISODES)
 
 run-web-agent-human: check-search-engine
 	@echo "Starting web agent text environment with human policy ($(NUM_EPISODES) episodes)..."
-	@uv run python run_envs/run_web_agent_env.py --observation-mode text --policy human --num-episodes $(NUM_EPISODES)
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so uv run python run_envs/run_web_agent_env.py --observation-mode text --policy human --num-episodes $(NUM_EPISODES)
 
 run-web-agent-paper-rule: check-search-engine
 	@echo "Starting web agent text environment with paper rule-based policy ($(NUM_EPISODES) episodes)..."
-	@uv run python run_envs/run_web_agent_env.py --observation-mode text --policy paper_rule --num-episodes $(NUM_EPISODES)
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so uv run python run_envs/run_web_agent_env.py --observation-mode text --policy paper_rule --num-episodes $(NUM_EPISODES)
 
 run-web-agent-simple-rule: check-search-engine
 	@echo "Starting web agent text environment with simple rule-based policy ($(NUM_EPISODES) episodes)..."
-	@uv run python run_envs/run_web_agent_env.py --observation-mode text --policy simple_rule --num-episodes $(NUM_EPISODES)
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so uv run python run_envs/run_web_agent_env.py --observation-mode text --policy simple_rule --num-episodes $(NUM_EPISODES)
+
+run-web-agent-llm: check-search-engine
+	@echo "Starting web agent text environment with LLM policy ($(NUM_EPISODES) episodes)..."
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so uv run python run_envs/run_web_agent_env.py --observation-mode text --policy llm --num-episodes $(NUM_EPISODES)
 
 run-web-agent-custom:
 	@echo "Starting web agent with custom parameters..."
 	@echo "Usage: make run-web-agent-custom ARGS='--observation-mode text --num-products 100 --policy random --num-episodes 3'"
 	@echo "Or override NUM_EPISODES: make run-web-agent-custom NUM_EPISODES=10 ARGS='--observation-mode text --policy random'"
-	@uv run python run_envs/run_web_agent_env.py $(ARGS)
+	@JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64 JVM_PATH=/usr/lib/jvm/java-21-openjdk-amd64/lib/server/libjvm.so uv run python run_envs/run_web_agent_env.py $(ARGS)
 
 setup-data-small: check-uv
 	@echo "Downloading small dataset (1000 items)..."

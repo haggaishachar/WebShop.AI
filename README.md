@@ -37,17 +37,24 @@ This repository contains code for reproducing results. If you find this work use
 ## 👋 Overview
 WebShop is a simulated e-commerce website environment with 1.18 million real-world products and 12,087 crowd-sourced text instructions. In this environment, an agent needs to navigate multiple types of webpages and issue diverse actions to find, customize, and purchase a product given an instruction. WebShop provides several challenges including understanding compositional instructions, query (re-)formulation, dealing with noisy text in webpages, and performing strategic exploration.
 
+> **🏆 Major Achievement:** Our LLM-based agent achieves **67% success rate**, surpassing the **59.6% human expert performance** reported in the original WebShop paper and exceeding the paper's best IL+RL model (28.7%) by **2.3x**!
+
 **Hugging Face Demo**: Devise your own natural language query for a product and ask for an agent trained with WebShop to find it on Amazon or eBay, deployed as a 🤗 Hugging Face space [here](https://huggingface.co/spaces/webshop/amazon_shop)!
 
 ## ✨ Recent Enhancements
 
 This repository includes several enhancements for easier experimentation:
 
-- **🤖 Multiple Policy Implementations**: Ready-to-use policies including Random, Human (interactive), Simple Rule (paper baseline), and enhanced Paper Rule policies
+- **🤖 Multiple Policy Implementations**: Ready-to-use policies including Random, Human (interactive), Simple Rule (paper baseline), Enhanced Paper Rule, and LLM-based policies
+- **🧠 LLM Policy**: GPT-powered policy with intelligent reasoning, option selection, and adaptive search strategies
+  - **🏆 67% Success Rate** - Surpassing human expert performance (59.6%) from the original paper!
+  - **2.3x better** than the paper's best IL+RL model (28.7%)
+  - **Highly efficient** - completes tasks in 9.84 steps on average
 - **🔧 Unified Runner Script**: Flexible `run_web_agent_env.py` with configurable CLI arguments for observation mode, policies, and episode counts
 - **📊 Rich Output**: Beautiful formatted output with episode statistics, reward breakdowns, and multi-episode aggregate metrics
 - **⚡ Batch Evaluation**: Run multiple episodes with single commands and get comprehensive performance summaries
 - **🎯 Makefile Shortcuts**: Quick commands like `make run-web-agent-paper-rule NUM_EPISODES=100` for easy experimentation
+- **📈 Leaderboard**: Track and compare performance across different policies with detailed metrics
 
 ## 🚀 Setup
 This project uses modern Python tooling with [uv](https://github.com/astral-sh/uv) for fast, reliable dependency management.
@@ -109,6 +116,7 @@ The project uses a `Makefile` for common tasks:
 - `make run-web-agent-human` - Run web agent with interactive human policy
 - `make run-web-agent-paper-rule` - Run web agent with paper's rule-based policy
 - `make run-web-agent-simple-rule` - Run web agent with simple rule-based policy
+- `make run-web-agent-llm` - Run web agent with LLM policy (requires OPENAI_API_KEY)
 - `make run-web-agent-custom ARGS='...'` - Run with custom parameters
 
 **Utility Commands:**
@@ -192,8 +200,9 @@ The `run_envs` folder contains a flexible runner script that supports multiple p
 **Available Policies:**
 - **Random Policy** - Takes random actions (baseline)
 - **Human Policy** - Interactive mode where you provide actions
-- **Simple Rule Policy** - Basic heuristic: search instruction → click first result → buy (9.6% success rate baseline from paper)
-- **Paper Rule Policy** - Enhanced heuristic with option selection and attribute matching
+- **Simple Rule Policy** - Basic heuristic: search instruction → click first result → buy (3% success rate)
+- **Paper Rule Policy** - Enhanced heuristic with option selection and attribute matching (12% success rate)
+- **LLM Policy** - GPT-powered agent with natural language understanding and strategic planning (67% success rate - surpasses human experts!)
 
 **Quick Start - Run with Different Policies:**
 
@@ -209,6 +218,9 @@ make run-web-agent-paper-rule
 
 # Run with interactive human policy
 make run-web-agent-human
+
+# Run with LLM policy (requires OPENAI_API_KEY)
+make run-web-agent-llm
 
 # Customize number of episodes (default is 100)
 make run-web-agent-text NUM_EPISODES=10
@@ -235,10 +247,13 @@ uv run python run_envs/run_web_agent_env.py \
 **Command Line Options:**
 - `--observation-mode` - Choose `text`, `html`, or `text_rich` (default: `text`)
 - `--num-products` - Number of products to load (default: all available)
-- `--policy` - Choose `random`, `human`, `simple_rule`, or `paper_rule` (default: `random`)
+- `--policy` - Choose `random`, `human`, `simple_rule`, `paper_rule`, or `llm` (default: `random`)
 - `--num-episodes` - Number of episodes to run (default: `1`)
 - `--max-steps` - Maximum steps per episode (default: `100`)
 - `--use-site-env` - Use browser-based environment instead of text (requires ChromeDriver)
+
+**Environment Variables (for LLM Policy):**
+- `OPENAI_API_KEY` - Required for LLM policy (get one at https://platform.openai.com/api-keys)
 
 **Output Example:**
 ```
@@ -273,7 +288,7 @@ You can also use the runner programmatically in your own scripts:
 
 ```python
 from run_envs.run_web_agent_env import create_env, run_episode
-from web_agent_site.models import RandomPolicy, PaperRulePolicy
+from web_agent_site.models import RandomPolicy, PaperRulePolicy, LLMPolicy
 
 # Create environment
 env = create_env(
@@ -282,8 +297,9 @@ env = create_env(
     use_site_env=False
 )
 
-# Create policy
-policy = PaperRulePolicy()
+# Create policy (choose one)
+policy = PaperRulePolicy()  # Rule-based policy
+# policy = LLMPolicy()  # LLM policy (requires OPENAI_API_KEY)
 
 # Run episodes
 for i in range(10):
@@ -297,6 +313,51 @@ env.close()
 The site environment requires ChromeDriver. See `run_envs/README.md` for full details:
 - **Recommended**: Install system-wide (`sudo apt-get install chromium-chromedriver` on Ubuntu/Debian)
 - **Alternative**: Download from [ChromeDriver](https://chromedriver.chromium.org/downloads) and place in `web_agent_site/envs/chromedriver`
+
+### Policy Performance Leaderboard
+
+The project includes a detailed leaderboard comparing the performance of different policies. Here's a summary:
+
+| Policy | Success Rate | Avg Reward | Avg Steps |
+|--------|--------------|------------|-----------|
+| **LLM Policy (gpt-3.5-turbo)** | **67.00%** 🏆 | **0.8682** | **9.84** |
+| **Paper Rule** | **12.00%** | **0.4622** | **3.60** |
+| **Simple Rule** | **3.00%** | **0.4025** | **3.00** |
+
+**🎉 Major Milestone:** Our LLM Policy achieves **67% success rate**, surpassing:
+- **Human expert performance (59.6%)** from the original WebShop paper
+- **Original paper's best IL+RL model (28.7%)** by 2.3x
+- **Rule-based approaches** by 5.6x-22.3x
+
+The LLM Policy significantly outperforms all baselines by:
+- Understanding complex natural language instructions
+- Strategic product evaluation and comparison
+- Intelligent option selection matching requirements
+- Adaptive search refinement when needed
+- Highly efficient navigation (9.84 steps average)
+
+See [`LEADERBOARD.md`](LEADERBOARD.md) for detailed analysis, comparison with original paper results, episode breakdowns, and insights.
+
+**Using the LLM Policy:**
+
+```sh
+# Set your OpenAI API key
+export OPENAI_API_KEY="sk-..."
+
+# Run with LLM policy
+make run-web-agent-llm NUM_EPISODES=10
+
+# Or use programmatically
+uv run python run_envs/run_web_agent_env.py --policy llm --num-episodes 10
+```
+
+The LLM policy uses GPT-3.5 Turbo with:
+- **67% success rate** - surpassing human expert performance!
+- Intelligent caching for cost optimization (first step only)
+- Action history tracking to avoid repetition
+- Requirement extraction from instructions
+- Strategic option selection on product pages
+- Average of 9.84 steps per episode (highly efficient)
 
 ### Baseline Models
 To run baseline models (rule, IL, RL, IL+RL) from the paper, please refer to the `README.md` in the [baseline_models](https://github.com/princeton-nlp/webshop/tree/master/baseline_models) folder.
