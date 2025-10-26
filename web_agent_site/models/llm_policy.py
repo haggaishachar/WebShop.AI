@@ -181,31 +181,45 @@ class LLMPolicy:
 
 Your goal is to find and purchase products that match the given instruction.
 
-Available action formats:
+CRITICAL: Every action MUST follow one of these EXACT formats:
 - search[query] - Search for products with the given query
 - click[element] - Click on an element (button name or product ID)
 
+NO OTHER FORMAT IS VALID. Your entire response must be a single action in one of these two formats.
+
 Important rules:
 1. Read the instruction carefully to understand what to buy (size, color, options, price, etc.)
-2. Use search to find relevant products with targeted queries
-3. Click on product IDs (starting with B0...) to view details
+2. Use search[query] to find relevant products with targeted queries
+3. Use click[B0XXXXXXX] to click on product IDs (starting with B0...)
 4. **CRITICAL**: When on a product page, you MUST click on the correct OPTIONS before buying:
-   - Look for size, color, pack/count options in the clickables
+   - Look for size, color, pack/count options in the available clickables
    - Match these options to what the instruction asks for
-   - Click each required option (e.g., "5x-large", "mossy oak country dna", "6 pack")
-   - Only click "Buy Now" AFTER selecting all required options
+   - Use click[option] for each required option (e.g., click[5x-large], click[mossy oak country dna], click[6 pack])
+   - Only use click[buy now] AFTER selecting all required options
 5. Check that the price matches the instruction requirement
 6. NEVER repeat the same action if it didn't work - try something different
-7. If search returns no good results, click on a product to explore or try "back to search"
+7. To go back to search results, use click[back to search]
 8. Make progress - don't get stuck repeating actions
 
-Your response should ONLY contain the action, nothing else.
-Example responses:
+RESPONSE FORMAT REQUIREMENTS:
+- Your response must be EXACTLY one action
+- Must start with either "search[" or "click["
+- Must end with "]"
+- No explanations, no extra text, just the action
+
+Valid examples:
 search[men's t-shirt long sleeve]
 click[B00O30JLDK]
 click[5x-large big]
 click[mossy oak country dna]
-click[buy now]"""
+click[back to search]
+click[buy now]
+
+Invalid examples (DO NOT USE):
+back to search
+search for men's t-shirt
+click on the buy button
+I will search[men's t-shirt]"""
     
     def _build_prompt(self, observation: str, available_actions: dict) -> str:
         """Build the prompt for the LLM."""
@@ -260,6 +274,7 @@ click[buy now]"""
             prompt_parts.append("")
         
         prompt_parts.append("What action should I take next?")
+        prompt_parts.append("(Respond with ONLY the action in format: search[query] or click[element])")
         
         return "\n".join(prompt_parts)
     
